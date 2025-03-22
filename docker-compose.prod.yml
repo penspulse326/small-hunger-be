@@ -1,47 +1,55 @@
+version: '3.8'
+
 services:
   api:
     container_name: small-hunger-api
     build:
       context: .
-      target: development
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
+      target: production
     ports:
-      - "${API_PORT}:3000"
-    command: npm run start:dev
+      - "${API_PORT:-3000}:3000"
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - POSTGRES_HOST=${POSTGRES_HOST}
-      - POSTGRES_PORT=5432
+      - POSTGRES_PORT=${POSTGRES_PORT}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
     env_file:
-      - .env
+      - .env.production
     networks:
-      - small-hunger-network
+      - food-delivery-network
     depends_on:
       - postgres
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
 
   postgres:
     image: postgres:16
     container_name: ${POSTGRES_HOST}
-    ports:
-      - "${POSTGRES_PORT}:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
+    restart: always
     networks:
-      - small-hunger-network
+      - food-delivery-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
 
 volumes:
   postgres_data:
+    name: ${POSTGRES_DB}_data
 
 networks:
-  small-hunger-network:
+  food-delivery-network:
     driver: bridge
